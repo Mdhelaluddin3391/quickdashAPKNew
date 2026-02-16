@@ -181,11 +181,26 @@ footer {
 .mobile-nav a.active {
     color: var(--primary-color, #ff6b6b); /* Aapka main color */
     font-weight: 700;
-    border-bottom: 2px solid var(--primary-color, #ff6b6b); /* Neeche line (optional) */
 }
 
 /* Ensure karein ki hover aur active mein conflict na ho */
 .nav-menu a:hover {
     color: var(--primary-color, #ff6b6b);
     opacity: 0.8;
+}
+
+
+
+/* Ye existing code ke neeche add karein ya existing navbar/header css me modify karein */
+.navbar, header, .top-bar { 
+    /* Apple/Android dono ke modern phones (notch wale) ko handle karne ke liye env() variables hote hain */
+    padding-top: env(safe-area-inset-top, 20px) !important;
+}
+
+/* Agar aapke index.html me direct body ya main container me issue hai toh: */
+body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }

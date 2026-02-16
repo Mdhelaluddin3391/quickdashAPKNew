@@ -259,15 +259,35 @@ async function loadCategories() {
 async function loadBrands() {
     const container = document.getElementById('brand-scroller');
     if (!container) return;
+    
     try {
-        const brands = await ApiService.get('/catalog/brands/');
-        if(!brands.length) { container.style.display = 'none'; return; }
-        container.innerHTML = brands.map(b => `
-            <div class="brand-circle" onclick="window.location.href='./search_results.html?brand=${b.id}'">
-                <img src="${b.logo_url}" alt="${b.name}">
+        const response = await ApiService.get('/catalog/brands/');
+        // Paginated array ya direct array ko handle karne ke liye
+        const brands = response.results ? response.results : response;
+
+        if(!brands || brands.length === 0) { 
+            container.style.display = 'none'; 
+            return; 
+        }
+
+        container.style.display = 'flex';
+        
+        // Sirf shuru ke 8 brands hi dikhayein
+        const brandsToShow = brands.slice(0, 8);
+
+        // Updated Structure: Image ke niche Name show karne ke liye
+        container.innerHTML = brandsToShow.map(b => `
+            <div class="brand-item" onclick="window.location.href='./search_results.html?brand=${b.id}'">
+                <div class="brand-circle">
+                    <img src="${b.logo_url || b.logo || 'https://via.placeholder.com/100?text=Brand'}" alt="${b.name}">
+                </div>
+                <div class="brand-name">${b.name}</div>
             </div>
         `).join('');
-    } catch (e) {}
+    } catch (e) {
+        console.error("Brands load error:", e);
+        container.style.display = 'none';
+    }
 }
 
 async function loadFlashSales() {

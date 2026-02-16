@@ -1,13 +1,14 @@
 
 {
-  "appId": "com.example.app",
+  "appId": "com.quickdash.app",
   "appName": "QuickDash",
   "webDir": "www",
   "bundledWebRuntime": false,
   "plugins": {
     "StatusBar": {
       "overlaysWebView": false,
-      "backgroundColor": "#000000"
+      "backgroundColor": "#000000",
+      "style": "LIGHT"
     }
   }
 }
