@@ -305,22 +305,31 @@
         const API_URL = `${window.APP_CONFIG.API_BASE_URL}/catalog/categories/parents/`;
         const CACHE_KEY = 'nav_parents_cache';
         
+        // STEP 1: Pehle LocalStorage (Cache) se turant data dikhayein taki user ko wait na karna pade
         try {
             const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-            if (cached && (Date.now() - cached.ts) < 3600000 && Array.isArray(cached.data)) {
+            if (cached && Array.isArray(cached.data)) {
                 renderNav(cached.data);
-                return;
             }
-        } catch (e) { }
+        } catch (e) { 
+            console.warn("Cache read error", e);
+        }
 
+        // STEP 2: Background mein API call karein. Agar koi naya category add hua hai toh update kar dega
         try {
             const resp = await fetch(API_URL);
+            if (!resp.ok) throw new Error("API response not ok");
+            
             const data = await resp.json();
             if (Array.isArray(data)) {
+                // Naya data LocalStorage mein save karein (bina timestamp lock ke)
                 localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
+                // Navbar ko naye data ke sath dobara render karein
                 renderNav(data);
             }
-        } catch (err) { }
+        } catch (err) { 
+            console.error("Failed to fetch nav categories", err);
+        }
     }
 
     function renderNav(categories) {
