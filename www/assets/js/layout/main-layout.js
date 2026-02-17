@@ -403,3 +403,24 @@
         }
     };
 })();
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.PullToRefresh) {
+        PullToRefresh.init({
+            mainElement: 'body',
+            onRefresh: function() {
+                return new Promise((resolve) => {
+                    // Page ko smooth tareeqe se reload karega
+                    window.location.reload(); 
+                    resolve();
+                });
+            },
+            instructionsPullToRefresh: 'Pull down to refresh',
+            instructionsReleaseToRefresh: 'Release to refresh',
+            instructionsRefreshing: 'Refreshing...',
+        });
+    }
+});
