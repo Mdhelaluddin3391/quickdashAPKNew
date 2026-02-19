@@ -301,7 +301,7 @@ async function loadBanners() {
                 heroContainer.innerHTML = heroBanners.map(b => `
                     <img src="${b.image_url}" class="hero-slide" 
                          style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px; max-height: 200px;"
-                         onclick="window.location.href='${b.target_url || '#'}'"
+                         onclick="handleBannerClick('${b.target_url}')"
                          alt="${b.title || 'Hero Banner'}">
                 `).join('');
                 heroContainer.style.display = 'block';
@@ -312,7 +312,7 @@ async function loadBanners() {
             // 3. MID Banners set karein (Beech wale section ke liye)
             if (midContainer && midBanners.length > 0) {
                 midContainer.innerHTML = midBanners.map(b => `
-                    <div class="mid-banner" onclick="window.location.href='${b.target_url || '#'}'">
+                    <div class="mid-banner" onclick="handleBannerClick('${b.target_url}')">
                         <img src="${b.image_url}" alt="${b.title || 'Mid Banner'}">
                     </div>
                 `).join('');
@@ -388,17 +388,22 @@ async function loadFlashSales() {
     if (!section || !grid) return;
     
     try {
-        const sales = await ApiService.get('/catalog/flash-sales/');
-        if (!sales || sales.length === 0) {
+        const response = await ApiService.get('/catalog/flash-sales/');
+        
+        // FIX: Paginated response ko handle karna
+        const sales = response.results ? response.results : response;
+
+        if (!Array.isArray(sales) || sales.length === 0) {
             section.style.display = 'none';
             return;
         }
+        
         section.style.display = 'block';
         grid.innerHTML = sales.map(item => `
             <div class="flash-card">
                 <div class="badge-off">${item.discount_percent}% OFF</div>
                 <a href="./product.html?code=${item.sku_id || item.sku}">
-                    <img src="${item.sku_image}" style="width:100%; height:100px; object-fit:contain; margin-bottom:5px;">
+                    <img src="${item.sku_image}" style="width:100%; height:100px; object-fit:contain; margin-bottom:5px;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
                     <div style="font-size:0.85rem; font-weight:600; height:36px; overflow:hidden;">${item.sku_name}</div>
                 </a>
                 <div class="f-price-box">
@@ -408,7 +413,11 @@ async function loadFlashSales() {
                 <button onclick="addToCart('${item.sku}', this)" class="btn btn-sm btn-primary w-100 mt-2">ADD</button>
             </div>
         `).join('');
-    } catch (e) { section.style.display = 'none'; }
+    } catch (e) { 
+        // FIX: Error ko console mein dikhayein taaki debugging mein aasaani ho
+        console.error("Flash Sales load error:", e);
+        section.style.display = 'none'; 
+    }
 }
 
 function createProductCard(p) {
@@ -477,5 +486,24 @@ window.addToCart = async function(skuCode, btn) {
         Toast.error(e.message || "Failed to add");
         btn.innerText = originalText;
         btn.disabled = false;
+    }
+};
+
+// --- APK Navigation Fix for Banners ---
+window.handleBannerClick = function(url) {
+    if (!url || url === '#' || url === 'null') return;
+    
+    // Agar URL main http ya https hai, toh usko relative path main convert karein
+    if (url.startsWith('http')) {
+        try {
+            const urlObj = new URL(url);
+            // Sirf path aur query params nikalega (e.g., /search_results.html?slug=veg)
+            window.location.href = urlObj.pathname + urlObj.search;
+        } catch (e) {
+            window.location.href = url;
+        }
+    } else {
+        // Agar already relative URL hai (e.g., ./product.html)
+        window.location.href = url;
     }
 };
