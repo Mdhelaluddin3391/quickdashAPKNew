@@ -305,31 +305,22 @@
         const API_URL = `${window.APP_CONFIG.API_BASE_URL}/catalog/categories/parents/`;
         const CACHE_KEY = 'nav_parents_cache';
         
-        // STEP 1: Pehle LocalStorage (Cache) se turant data dikhayein taki user ko wait na karna pade
         try {
             const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-            if (cached && Array.isArray(cached.data)) {
+            if (cached && (Date.now() - cached.ts) < 3600000 && Array.isArray(cached.data)) {
                 renderNav(cached.data);
+                return;
             }
-        } catch (e) { 
-            console.warn("Cache read error", e);
-        }
+        } catch (e) { }
 
-        // STEP 2: Background mein API call karein. Agar koi naya category add hua hai toh update kar dega
         try {
             const resp = await fetch(API_URL);
-            if (!resp.ok) throw new Error("API response not ok");
-            
             const data = await resp.json();
             if (Array.isArray(data)) {
-                // Naya data LocalStorage mein save karein (bina timestamp lock ke)
                 localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
-                // Navbar ko naye data ke sath dobara render karein
                 renderNav(data);
             }
-        } catch (err) { 
-            console.error("Failed to fetch nav categories", err);
-        }
+        } catch (err) { }
     }
 
     function renderNav(categories) {
@@ -407,20 +398,56 @@
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.PullToRefresh) {
-        PullToRefresh.init({
-            mainElement: 'body',
-            onRefresh: function() {
-                return new Promise((resolve) => {
-                    // Page ko smooth tareeqe se reload karega
-                    window.location.reload(); 
-                    resolve();
-                });
-            },
-            instructionsPullToRefresh: 'Pull down to refresh',
-            instructionsReleaseToRefresh: 'Release to refresh',
-            instructionsRefreshing: 'Refreshing...',
-        });
-    }
+
+
+
+// frontend/assets/js/layout/main-layout.js ke end me update karein
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkStoreStatus();
 });
+
+async function checkStoreStatus() {
+    try {
+        // FIX: APP_CONFIG.API_BASE_URL ka use karein
+        const baseUrl = window.APP_CONFIG?.API_BASE_URL || 'https://quickdash-front-back.onrender.com/api/v1';
+        
+        // baseUrl ke sath /core/store-status/ lagayein
+        const response = await fetch(`${baseUrl}/core/store-status/`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Agar store band hai
+            if (data.is_store_open === false) {
+                showStoreOfflineUI(data.store_closed_message);
+            }
+        } else {
+            console.error("Store status API returned:", response.status);
+        }
+    } catch (error) {
+        console.error("Error fetching store status:", error);
+    }
+}
+
+function showStoreOfflineUI(message) {
+    // Body me class add karein taki scrolling band ho jaye
+    document.body.classList.add('store-closed-mode');
+    
+    // UI elements create karein
+    const overlay = document.createElement('div');
+    overlay.className = 'store-offline-overlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'store-offline-modal';
+    
+    modal.innerHTML = `
+        <h2>Store is Offline</h2>
+        <p>${message}</p>
+    `;
+    
+    overlay.appendChild(modal);
+    
+    // Isko body main sabse aage add kar de
+    document.body.appendChild(overlay);
+}
